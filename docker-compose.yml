@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+    container_name: flask_api
+    working_dir: /app
+    volumes:
+      - ./api:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - db
+      - rabbitmq
+
+  worker:
+    build:
+      context: ./worker
+    container_name: celery_worker
+    working_dir: /app
+    volumes:
+      - ./worker:/app
+    command: celery -A celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - db
+      - rabbitmq
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  katana:
+    image: projectdiscovery/katana:latest
+    container_name: katana_crawler
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./katana:/data
+    # Katana genellikle worker tarafından subprocess ile çağrılır, burada sadece hazır bekletiliyor
+  flower:
+    image: mher/flower
+    command: celery flower --broker=amqp://guest:guest@rabbitmq:5672//
+    ports:
+      - "5555:5555"
+    depends_on:
+      - rabbitmq
+      - worker
+    environment:
+      - FLOWER_PORT=5555
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+volumes:
+  db_data:
