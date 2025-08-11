@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import os
 
 # SQLAlchemy instance oluştur
@@ -59,7 +59,7 @@ class CrawlResult(db.Model):
     found_url = db.Column(db.String(2048), nullable=False)
     status_code = db.Column(db.Integer, nullable=True)
     content_type = db.Column(db.String(100), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
     
     # Görevle ilişki
     task = db.relationship('Task', backref=db.backref('crawl_results', lazy=True))

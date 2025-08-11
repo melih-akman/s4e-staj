@@ -1,4 +1,12 @@
+from datetime import datetime, timezone, timedelta
 from celery import Celery
+from model import db, init_app, Task, CrawlResult
+from flask import Flask
+
+
+
+flask_app = Flask(__name__)
+init_app(flask_app)
 
 # RabbitMQ bağlantı bilgileri - Docker Compose'da tanımlanan değerler
 BROKER_URL = 'amqp://guest:guest@rabbitmq:5672//'
@@ -17,7 +25,6 @@ app.conf.update(
     timezone='Europe/Istanbul',
     enable_utc=True,
     worker_concurrency=4,  # 4 işçi süreci çalıştır
-
 )
 
 # Task tanımlaması
@@ -25,18 +32,9 @@ app.conf.update(
 def add_numbers(x, y):
     return x + y
 
+@app.task(name='celery_app.run_command', bind=True)
+def run_command(self, command):
 
-@app.task(name='celery_app.run_command')
-def run_command(command):
-    """
-    Sistem komutunu çalıştırır ve sonucu döndürür.
-    
-    Args:
-        command: Çalıştırılacak komut (string veya liste)
-    
-    Returns:
-        dict: Komut çalıştırma sonuçları
-    """
     import subprocess
     import shlex
     
@@ -56,7 +54,15 @@ def run_command(command):
             check=True
         )
         
-        
+        # Veritabanına başarılı görev kaydı ekleme
+        with flask_app.app_context():
+            existing_task = Task.query.filter_by(id=self.request.id).first()
+            if existing_task:
+                existing_task.status = 'SUCCESS'
+                existing_task.result = result.stdout.replace('\n', ' ').strip() if result.stdout else None
+                existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                db.session.commit()
+
         return {
             "status": "success",
             "command": command if isinstance(command, str) else " ".join(command),
@@ -64,7 +70,27 @@ def run_command(command):
             "stderr": result.stderr,
             "return_code": result.returncode
         }
+        
     except subprocess.CalledProcessError as e:
+        # Hata durumunda da veritabanına kaydet
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "error",
+                        "command": command if isinstance(command, str) else ",".join(command),
+                        "stdout": e.stdout.strip() if e.stdout else None,
+                        "stderr": e.stderr.strip() if e.stderr else None,
+                        "return_code": e.returncode,
+                        "error": str(e)
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in subprocess exception: {db_error}")
+            
         return {
             "status": "error",
             "command": command if isinstance(command, str) else " ".join(command),
@@ -73,9 +99,29 @@ def run_command(command):
             "return_code": e.returncode,
             "error": str(e)
         }
+        
     except Exception as e:
+        # Genel hata durumu
+        try:
+            with flask_app.app_context():
+                saved_task = Task(
+                    id=self.request.id,
+                    task_type='run_command', 
+                    status='FAILURE',
+                    parameters={'command': str(command)},
+                    result={
+                        "status": "error",
+                        "command": str(command),
+                        "error": str(e)
+                    }
+                )
+                db.session.add(saved_task)
+                db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in general exception: {db_error}")
+            
         return {
             "status": "error",
-            "command": command if isinstance(command, str) else " ".join(command),
+            "command": str(command),
             "error": str(e)
         }
