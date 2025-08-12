@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from celery import Celery
-from model import db, init_app, Task, CrawlResult
+from model import db, init_app, Task, CrawlResult, NmapResult, WhoisResult
 from flask import Flask
 
 
@@ -172,7 +172,7 @@ def run_katana(self, url):
                     "url": url,
                     "crawl_results": crawl_results,
                     "total_found": len(crawl_results),
-                    "raw_output": result.stdout.replace('\n', ' ').strip() if result.stdout else None,
+                    "raw_output": result.stdout.strip() if result.stdout else None,
                     "found_url": [item.get('url') for item in crawl_results if isinstance(item, dict) and item.get('url')]
                 }
                 existing_task.completed_at = datetime.now() + timedelta(hours=3)
@@ -194,8 +194,8 @@ def run_katana(self, url):
             "url": url,
             "crawl_results": crawl_results,
             "total_found": len(crawl_results),
-            "stdout": result.stdout.replace('\n', ' ').strip() if result.stdout else "",
-            "stderr": result.stderr.replace('\n', ' ').strip() if result.stderr else "",
+            "stdout": result.stdout.strip() if result.stdout else "",
+            "stderr": result.stderr.strip() if result.stderr else "",
             "return_code": result.returncode
         }
         
@@ -232,8 +232,8 @@ def run_katana(self, url):
                     existing_task.result = {
                         "status": "error",
                         "url": url,
-                        "stdout": e.stdout.replace('\n', ' ').strip() if e.stdout else None,
-                        "stderr": e.stderr.replace('\n', ' ').strip() if e.stderr else None,
+                        "stdout": e.stdout.strip() if e.stdout else None,
+                        "stderr": e.stderr.strip() if e.stderr else None,
                         "return_code": e.returncode,
                         "error": str(e)
                     }
@@ -245,8 +245,8 @@ def run_katana(self, url):
         return {
             "status": "error",
             "url": url,
-            "stdout": e.stdout.replace('\n', ' ').strip() if e.stdout else "",
-            "stderr": e.stderr.replace('\n', ' ').strip() if e.stderr else "",
+            "stdout": e.stdout.strip() if e.stdout else "",
+            "stderr": e.stderr.strip() if e.stderr else "",
             "return_code": e.returncode,
             "error": str(e)
         }
@@ -273,3 +273,107 @@ def run_katana(self, url):
             "url": str(url),
             "error": str(e)
         }
+
+
+@app.task(name='celery_app.run_nmap', bind=True)
+def run_nmap(self, target):
+    import subprocess
+    import shlex
+    
+    try:
+        # Nmap komutunu çalıştır
+        cmd = ['docker', 'exec', 'nmap_scanner', 'nmap', '-sV', target]
+        print(f"Running command: {' '.join(cmd)}")
+        
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+            timeout=300  # 5 dakika timeout
+        )
+        
+        # Veritabanına başarılı görev kaydı ekleme
+        with flask_app.app_context():
+            existing_task = Task.query.filter_by(id=self.request.id).first()
+            if existing_task:
+                existing_task.status = 'SUCCESS'
+                existing_task.result = {
+                    "status": "success",
+                    "target": target,
+                    "scan_result": result.stdout.strip() if result.stdout else None,
+                }
+                existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                db.session.commit()
+                
+            # NmapResult tablosuna kaydet
+            nmap_record = NmapResult(
+                task_id=self.request.id,
+                target=target,
+                scan_result=result.stdout.strip() if result.stdout else None,
+                created_at=datetime.now() + timedelta(hours=3)
+            )
+            db.session.add(nmap_record)
+            db.session.commit()
+
+        return {
+            "status": "success",
+            "target": target,
+            "scan_result": result.stdout.strip() if result.stdout else "",
+            "stderr": result.stderr.strip() if result.stderr else "",
+            "return_code": result.returncode
+        }
+        
+    except subprocess.TimeoutExpired:
+        # Timeout durumu
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "timeout",
+                        "target": target,
+                        "error": "Nmap scan timeout (5 minutes)"
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in timeout: {db_error}")
+            
+        return {
+            "status": "timeout",
+            "target": target,
+            "error": "Nmap scan timeout (5 minutes)"
+        }
+    
+    except subprocess.CalledProcessError as e:
+        # Hata durumunda da veritabanına kaydet
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "error",
+                        "target": target,
+                        "stdout": e.stdout.strip() if e.stdout else None,
+                        "stderr": e.stderr.strip() if e.stderr else None,
+                        "return_code": e.returncode,
+                        "error": str(e)
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in subprocess exception: {db_error}")
+            
+        return {
+            "status": "error",
+            "target": target,
+            "stdout": e.stdout.strip() if e.stdout else "",
+            "stderr": e.stderr.strip() if e.stderr else "",
+            "return_code": e.returncode,
+            "error": str(e)
+        }
+        

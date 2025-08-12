@@ -35,7 +35,6 @@ services:
       - db
       - rabbitmq
       - katana
-    privileged: true
 
   db:
     image: postgres:15
@@ -89,5 +88,12 @@ services:
       - "8080:80"
     depends_on:
       - db
+
+  nmap:
+    image: instrumentisto/nmap
+    container_name: nmap_scanner
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./nmap:/data
 volumes:
   db_data:
