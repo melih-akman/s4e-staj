@@ -82,3 +82,17 @@ class NmapResult(db.Model):
         return f"<NmapResult {self.id}: {self.target}>"
     
 
+class WhoisResult(db.Model):
+    __tablename__ = 'whois_results'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'))
+    domain = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
+    whois_data = db.Column(db.Text, nullable=True)
+
+    # Görevle ilişki
+    task = db.relationship('Task', backref=db.backref('whois_results', lazy=True))
+    
+    def __repr__(self):
+        return f"<WhoisResult {self.id}: {self.domain}>"

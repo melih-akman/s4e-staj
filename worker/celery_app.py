@@ -377,3 +377,122 @@ def run_nmap(self, target):
             "error": str(e)
         }
         
+@app.task(name='celery_app.whois_lookup', bind=True)
+def whois_lookup(self, ip_address_or_domain):
+    import subprocess
+    import shlex
+    
+    try:
+        # Whois komutunu çalıştır
+        cmd = ['docker', 'exec', 'whois_lookup', 'whois', ip_address_or_domain]
+        print(f"Running command: {' '.join(cmd)}")
+        
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+            timeout=300  # 5 dakika timeout
+        )
+        # Whois sonucu veritabanına kaydet
+        with flask_app.app_context():
+            existing_task = Task.query.filter_by(id=self.request.id).first()
+            if existing_task:
+                existing_task.status = 'SUCCESS'
+                existing_task.result = {
+                    "status": "success",
+                    "ip_address_or_domain": ip_address_or_domain,
+                    "whois_result": result.stdout.strip() if result.stdout else None,
+                }
+                existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                db.session.commit()
+                
+            # WhoisResult tablosuna kaydet
+            whois_record = WhoisResult(
+                task_id=self.request.id,
+                domain=ip_address_or_domain,
+                created_at=datetime.now() + timedelta(hours=3),
+                whois_data=result.stdout.strip() if result.stdout else None
+            )
+            db.session.add(whois_record)
+            db.session.commit()
+        
+
+
+        return {
+            "status": "success",
+            "ip_address_or_domain": ip_address_or_domain,
+            "whois_result": result.stdout.strip() if result.stdout else "",
+            "stderr": result.stderr.strip() if result.stderr else "",
+            "return_code": result.returncode
+        }
+        
+    except subprocess.TimeoutExpired:
+        # Timeout durumu
+        try:
+    
+
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "timeout",
+                        "ip_address_or_domain": ip_address_or_domain,
+                        "error": "Whois lookup timeout (5 minutes)"
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    # WhoisResult tablosuna kaydet
+                    whois_record = WhoisResult(
+                        task_id=self.request.id,
+                        domain=ip_address_or_domain,
+                        created_at=datetime.now() + timedelta(hours=3),
+                        whois_data=result.stdout.strip() if result.stdout else None
+                    )
+                    db.session.add(whois_record)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in timeout: {db_error}")
+            
+        return {
+            "status": "timeout",
+            "ip_address_or_domain": ip_address_or_domain,
+            "error": "Whois lookup timeout (5 minutes)"
+        }
+    
+    except subprocess.CalledProcessError as e:
+        # Hata durumunda da veritabanına kaydet
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "error",
+                        "ip_address_or_domain": ip_address_or_domain,
+                        "stdout": e.stdout.strip() if e.stdout else None,
+                        "stderr": e.stderr.strip() if e.stderr else None,
+                        "return_code": e.returncode,
+                        "error": str(e)
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    # WhoisResult tablosuna kaydet
+                    whois_record = WhoisResult(
+                        task_id=self.request.id,
+                        domain=ip_address_or_domain,
+                        created_at=datetime.now() + timedelta(hours=3),
+                        whois_data=result.stdout.strip() if result.stdout else None
+                    )
+                    db.session.add(whois_record)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in subprocess exception: {db_error}")
+        return {
+            "status": "error",
+            "ip_address_or_domain": ip_address_or_domain,
+            "stdout": e.stdout.strip() if e.stdout else "",
+            "stderr": e.stderr.strip() if e.stderr else "",
+            "return_code": e.returncode,
+            "error": str(e)
+        }

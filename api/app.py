@@ -139,6 +139,50 @@ def run_nmap_scan():
     }), 202
 
 
+@app.route('/nmap-result/<task_id>')
+def get_nmap_result(task_id):
+    db_task = db.session.query(Task).filter_by(id=task_id).first()
+
+    if db_task and db_task.status in ['SUCCESS', 'FAILURE']:
+        return jsonify({
+            'task_id': db_task.id,
+            'status': db_task.status,
+            'result': db_task.result
+        })
+    
+    # Veritabanında güncel sonuç yoksa Celery'den kontrol et
+    task = celery.AsyncResult(task_id)
+    
+    if task.state == 'SUCCESS':
+        return jsonify({'result': task.result})
+    return jsonify({'state': task.state})
+
+
+@app.route('/whois-lookup', methods=['POST'])
+def whois_lookup():
+    data = request.get_json()
+    ip_address_or_domain = data.get('ip_address_or_domain')
+
+    if not ip_address_or_domain:
+        return jsonify({'error': 'IP adresi veya domain gerekli'}), 400
+
+    task = celery.send_task('celery_app.whois_lookup', args=[ip_address_or_domain])
+
+    # Veritabanına yeni görev kaydı ekle
+    new_task = Task(id=task.id, task_type='whois_lookup', status='PENDING', parameters={'ip_address': ip_address_or_domain})
+    db.session.add(new_task)
+    db.session.commit()
+    
+    return jsonify({
+        'task_id': task.id,
+        'message': f"'{ip_address_or_domain}' için WHOIS sorgusu başlatıldı",
+        'check_status_url': f"/whois-result/{task.id}"
+    }), 202
+
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
