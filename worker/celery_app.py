@@ -125,3 +125,151 @@ def run_command(self, command):
             "command": str(command),
             "error": str(e)
         }
+    
+
+@app.task(name='celery_app.run_katana', bind=True)
+def run_katana(self, url):
+    import subprocess
+    import shlex
+    import json
+    import os
+    
+    try:
+        # Docker container'ında Katana komutunu çalıştır
+        cmd = [
+            'docker', 'exec', 'katana_crawler',
+            'katana', '-u', url
+        ]
+        print(f"Running command: {' '.join(cmd)}")
+        
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+            timeout=300  # 5 dakika timeout
+        )
+        
+        crawl_results = []
+        if result.stdout:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    try:
+                        crawl_data = json.loads(line)
+                        crawl_results.append(crawl_data)
+                    except json.JSONDecodeError:
+                        # JSON parse edilemeyen satırları text olarak ekle
+                        crawl_results.append({"url": line.strip()})
+        
+        # Veritabanına başarılı görev kaydı ekleme
+        with flask_app.app_context():
+            existing_task = Task.query.filter_by(id=self.request.id).first()
+            if existing_task:
+                existing_task.status = 'SUCCESS'
+                existing_task.result = {
+                    "status": "success",
+                    "url": url,
+                    "crawl_results": crawl_results,
+                    "total_found": len(crawl_results),
+                    "raw_output": result.stdout.replace('\n', ' ').strip() if result.stdout else None,
+                    "found_url": [item.get('url') for item in crawl_results if isinstance(item, dict) and item.get('url')]
+                }
+                existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                db.session.commit()
+                
+            # CrawlResult tablosuna kaydet
+            found_urls = [item.get('url') for item in crawl_results if isinstance(item, dict) and item.get('url')]
+            crawl_record = CrawlResult(
+                task_id=self.request.id,
+                url=url,
+                content_length=len(found_urls),
+                created_at=datetime.now() + timedelta(hours=3)
+            )
+            db.session.add(crawl_record)
+            db.session.commit()
+
+        return {
+            "status": "success",
+            "url": url,
+            "crawl_results": crawl_results,
+            "total_found": len(crawl_results),
+            "stdout": result.stdout.replace('\n', ' ').strip() if result.stdout else "",
+            "stderr": result.stderr.replace('\n', ' ').strip() if result.stderr else "",
+            "return_code": result.returncode
+        }
+        
+    except subprocess.TimeoutExpired:
+        # Timeout durumu
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "timeout",
+                        "url": url,
+                        "error": "Katana crawling timeout (5 minutes)"
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in timeout: {db_error}")
+            
+        return {
+            "status": "timeout",
+            "url": url,
+            "error": "Katana crawling timeout (5 minutes)"
+        }
+        
+    except subprocess.CalledProcessError as e:
+        # Hata durumunda da veritabanına kaydet
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "error",
+                        "url": url,
+                        "stdout": e.stdout.replace('\n', ' ').strip() if e.stdout else None,
+                        "stderr": e.stderr.replace('\n', ' ').strip() if e.stderr else None,
+                        "return_code": e.returncode,
+                        "error": str(e)
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in subprocess exception: {db_error}")
+            
+        return {
+            "status": "error",
+            "url": url,
+            "stdout": e.stdout.replace('\n', ' ').strip() if e.stdout else "",
+            "stderr": e.stderr.replace('\n', ' ').strip() if e.stderr else "",
+            "return_code": e.returncode,
+            "error": str(e)
+        }
+        
+    except Exception as e:
+        # Genel hata durumu
+        try:
+            with flask_app.app_context():
+                existing_task = Task.query.filter_by(id=self.request.id).first()
+                if existing_task:
+                    existing_task.status = 'FAILURE'
+                    existing_task.result = {
+                        "status": "error",
+                        "url": url,
+                        "error": str(e)
+                    }
+                    existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                    db.session.commit()
+        except Exception as db_error:
+            print(f"Database error in general exception: {db_error}")
+            
+        return {
+            "status": "error",
+            "url": str(url),
+            "error": str(e)
+        }

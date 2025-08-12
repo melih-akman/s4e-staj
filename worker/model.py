@@ -56,11 +56,9 @@ class CrawlResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'))
     url = db.Column(db.String(2048), nullable=False)
-    found_url = db.Column(db.String(2048), nullable=False)
-    status_code = db.Column(db.Integer, nullable=True)
-    content_type = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
-    
+    content_length = db.Column(db.Integer, nullable=True)
+
     # Görevle ilişki
     task = db.relationship('Task', backref=db.backref('crawl_results', lazy=True))
     

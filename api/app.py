@@ -59,7 +59,7 @@ def run_system_command():
         
     # Celery görevini başlat
     task = celery.send_task('celery_app.run_command', args=[command])
-    
+
     #database kaydı oluştur
     new_task = Task(id=task.id, task_type='run_command', status='PENDING', parameters={'command': command})
     db.session.add(new_task)
@@ -72,28 +72,6 @@ def run_system_command():
         'check_status_url': f"/command-result/{task.id}"
     }), 202
 
-# Celery signal handlers - task tamamlandığında otomatik veritabanına kaydetmek için
-from celery.signals import task_success, task_failure
-
-@task_success.connect
-def handle_task_success(sender=None, result=None, **kwargs):
-    task_id = sender.request.id
-    with app.app_context():
-        task = db.session.query(Task).filter_by(id=task_id).first()
-        if task:
-            task.status = 'SUCCESS'
-            task.result = result
-            db.session.commit()
-
-@task_failure.connect
-def handle_task_failure(sender=None, exception=None, traceback=None, **kwargs):
-    task_id = sender.request.id
-    with app.app_context():
-        task = db.session.query(Task).filter_by(id=task_id).first()
-        if task:
-            task.status = 'FAILURE'
-            task.result = {'error': str(exception)}
-            db.session.commit()
 
 @app.route('/command-result/<task_id>')
 def get_command_result(task_id):
@@ -113,6 +91,29 @@ def get_command_result(task_id):
     if task.state == 'SUCCESS':
         return jsonify({'result': task.result})
     return jsonify({'state': task.state})
+
+# Katana Endpointi için task ekleme
+@app.route('/run-katana', methods=['POST'])
+def run_katana():
+    data = request.get_json()
+    url = data.get('url')
+    
+    if not url:
+        return jsonify({'error': 'URL gerekli'}), 400
+    
+    # Celery görevini başlat
+    task = celery.send_task('celery_app.run_katana', args=[url])
+
+    # Veritabanına yeni görev kaydı ekle
+    new_task = Task(id=task.id, task_type='run_katana', status='PENDING', parameters={'url': url})
+    db.session.add(new_task)
+    db.session.commit()
+    
+    return jsonify({
+        'task_id': task.id,
+        'message': f"'{url}' için Katana taraması başlatıldı",
+        'check_status_url': f"/katana-result/{task.id}"
+    }), 202
 
 if __name__ == '__main__':
     app.run(debug=True)
