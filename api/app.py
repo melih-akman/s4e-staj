@@ -44,7 +44,7 @@ def get_result(task_id):
         return jsonify({'result': task.result})
     return jsonify({'state': task.state})
 
-@app.route('/run-command', methods=['POST'])
+@app.route('/api/run-command', methods=['POST'])
 def run_system_command():
     data = request.get_json()
     command = data.get('command')
@@ -73,7 +73,7 @@ def run_system_command():
     }), 202
 
 
-@app.route('/command-result/<task_id>')
+@app.route('/api/command-result/<task_id>')
 def get_command_result(task_id):
     # Önce veritabanından kontrol et
     db_task = db.session.query(Task).filter_by(id=task_id).first()
@@ -93,7 +93,7 @@ def get_command_result(task_id):
     return jsonify({'state': task.state})
 
 # Katana Endpointi için task ekleme
-@app.route('/run-katana', methods=['POST'])
+@app.route('/api/run-katana', methods=['POST'])
 def run_katana():
     data = request.get_json()
     url = data.get('url')
@@ -116,7 +116,7 @@ def run_katana():
     }), 202
 
 
-@app.route('/nmap-scan', methods=['POST'])
+@app.route('/api/nmap-scan', methods=['POST'])
 def run_nmap_scan():
     data = request.get_json()
     target = data.get('target')
@@ -139,7 +139,7 @@ def run_nmap_scan():
     }), 202
 
 
-@app.route('/nmap-result/<task_id>')
+@app.route('/api/nmap-result/<task_id>')
 def get_nmap_result(task_id):
     db_task = db.session.query(Task).filter_by(id=task_id).first()
 
@@ -158,7 +158,7 @@ def get_nmap_result(task_id):
     return jsonify({'state': task.state})
 
 
-@app.route('/whois-lookup', methods=['POST'])
+@app.route('/api/whois-lookup', methods=['POST'])
 def whois_lookup():
     data = request.get_json()
     ip_address_or_domain = data.get('ip_address_or_domain')
