@@ -64,3 +64,21 @@ class CrawlResult(db.Model):
     
     def __repr__(self):
         return f"<CrawlResult {self.id}: {self.found_url}>"
+    
+
+class NmapResult(db.Model):
+    __tablename__ = 'nmap_results'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'))
+    target = db.Column(db.String(2048), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
+    scan_result = db.Column(db.Text, nullable=True)
+
+    # Görevle ilişki
+    task = db.relationship('Task', backref=db.backref('nmap_results', lazy=True))
+    
+    def __repr__(self):
+        return f"<NmapResult {self.id}: {self.target}>"
+    
+

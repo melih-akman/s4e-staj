@@ -115,5 +115,30 @@ def run_katana():
         'check_status_url': f"/katana-result/{task.id}"
     }), 202
 
+
+@app.route('/nmap-scan', methods=['POST'])
+def run_nmap_scan():
+    data = request.get_json()
+    target = data.get('target')
+    
+    if not target:
+        return jsonify({'error': 'Hedef gerekli'}), 400
+    
+    # Celery görevini başlat
+    task = celery.send_task('celery_app.run_nmap', args=[target])
+
+    # Veritabanına yeni görev kaydı ekle
+    new_task = Task(id=task.id, task_type='run_nmap', status='PENDING', parameters={'target': target})
+    db.session.add(new_task)
+    db.session.commit()
+    
+    return jsonify({
+        'task_id': task.id,
+        'message': f"'{target}' için Nmap taraması başlatıldı",
+        'check_status_url': f"/nmap-result/{task.id}"
+    }), 202
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
