@@ -95,5 +95,13 @@ services:
     entrypoint: ["sleep", "infinity"]
     volumes:
       - ./nmap:/data
+
+  whois:
+    image: tooldockers/whois
+    container_name: whois_lookup
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./whois:/data
+   
 volumes:
   db_data:
