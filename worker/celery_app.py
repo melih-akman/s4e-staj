@@ -2,7 +2,8 @@ from datetime import datetime, timezone, timedelta
 from celery import Celery
 from model import db, init_app, Task, CrawlResult, NmapResult, WhoisResult
 from flask import Flask
-
+import subprocess
+import shlex
 
 
 flask_app = Flask(__name__)
@@ -27,13 +28,9 @@ app.conf.update(
     worker_concurrency=4,  # 4 işçi süreci çalıştır
 )
 
-# Task tanımlaması
-@app.task(name='celery_app.add_numbers')
-def add_numbers(x, y):
-    return x + y
 
 @app.task(name='celery_app.run_command', bind=True)
-def run_command(self, command):
+def run_command(self, command, user_id):
 
     import subprocess
     import shlex
@@ -61,6 +58,7 @@ def run_command(self, command):
                 existing_task.status = 'SUCCESS'
                 existing_task.result = result.stdout.replace('\n', ' ').strip() if result.stdout else None
                 existing_task.completed_at = datetime.now() + timedelta(hours=3)
+                existing_task.user_id = user_id
                 db.session.commit()
 
         return {
@@ -68,7 +66,8 @@ def run_command(self, command):
             "command": command if isinstance(command, str) else " ".join(command),
             "stdout": result.stdout,
             "stderr": result.stderr,
-            "return_code": result.returncode
+            "return_code": result.returncode,
+            "user_id": user_id
         }
         
     except subprocess.CalledProcessError as e:
@@ -85,7 +84,9 @@ def run_command(self, command):
                         "stderr": e.stderr.strip() if e.stderr else None,
                         "return_code": e.returncode,
                         "error": str(e)
+
                     }
+                    existing_task.user_id = user_id
                     existing_task.completed_at = datetime.now() + timedelta(hours=3)
                     db.session.commit()
         except Exception as db_error:
@@ -126,9 +127,8 @@ def run_command(self, command):
             "error": str(e)
         }
     
-
 @app.task(name='celery_app.run_katana', bind=True)
-def run_katana(self, url):
+def run_katana(self, url, user_id):
     import subprocess
     import shlex
     import json
@@ -173,7 +173,8 @@ def run_katana(self, url):
                     "crawl_results": crawl_results,
                     "total_found": len(crawl_results),
                     "raw_output": result.stdout.strip() if result.stdout else None,
-                    "found_url": [item.get('url') for item in crawl_results if isinstance(item, dict) and item.get('url')]
+                    "found_url": [item.get('url') for item in crawl_results if isinstance(item, dict) and item.get('url')],
+                    "user_id": user_id
                 }
                 existing_task.completed_at = datetime.now() + timedelta(hours=3)
                 db.session.commit()
@@ -184,7 +185,8 @@ def run_katana(self, url):
                 task_id=self.request.id,
                 url=url,
                 content_length=len(found_urls),
-                created_at=datetime.now() + timedelta(hours=3)
+                created_at=datetime.now() + timedelta(hours=3),
+                user_id=user_id
             )
             db.session.add(crawl_record)
             db.session.commit()
@@ -274,9 +276,8 @@ def run_katana(self, url):
             "error": str(e)
         }
 
-
 @app.task(name='celery_app.run_nmap', bind=True)
-def run_nmap(self, target):
+def run_nmap(self, target, user_id):
     import subprocess
     import shlex
     
@@ -303,6 +304,7 @@ def run_nmap(self, target):
                     "status": "success",
                     "target": target,
                     "scan_result": result.stdout.strip() if result.stdout else None,
+                    "user_id": user_id
                 }
                 existing_task.completed_at = datetime.now() + timedelta(hours=3)
                 db.session.commit()
@@ -312,7 +314,8 @@ def run_nmap(self, target):
                 task_id=self.request.id,
                 target=target,
                 scan_result=result.stdout.strip() if result.stdout else None,
-                created_at=datetime.now() + timedelta(hours=3)
+                created_at=datetime.now() + timedelta(hours=3),
+                user_id=user_id
             )
             db.session.add(nmap_record)
             db.session.commit()
@@ -378,9 +381,7 @@ def run_nmap(self, target):
         }
         
 @app.task(name='celery_app.whois_lookup', bind=True)
-def whois_lookup(self, ip_address_or_domain):
-    import subprocess
-    import shlex
+def whois_lookup(self, ip_address_or_domain,user_id):
     
     try:
         # Whois komutunu çalıştır
@@ -413,7 +414,8 @@ def whois_lookup(self, ip_address_or_domain):
                 task_id=self.request.id,
                 domain=ip_address_or_domain,
                 created_at=datetime.now() + timedelta(hours=3),
-                whois_data=result.stdout.strip() if result.stdout else None
+                whois_data=result.stdout.strip() if result.stdout else None,
+                user_id=user_id
             )
             db.session.add(whois_record)
             db.session.commit()

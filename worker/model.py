@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta, timezone
 import os
 
-# SQLAlchemy instance oluştur
 db = SQLAlchemy()
 
 def init_app(app):
@@ -16,8 +15,6 @@ def init_app(app):
     # SQLAlchemy'yi uygulama ile ilişkilendir
     db.init_app(app)
 
-
-# Görev modeli
 class Task(db.Model):
     __tablename__ = 'tasks'
     
@@ -26,7 +23,8 @@ class Task(db.Model):
     status = db.Column(db.String(20), nullable=False)  # SUCCESS, PENDING, FAILURE
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
-    
+    user_id = db.Column(db.String(64),nullable=True)
+   
     # Görev parametreleri ve sonuçları JSON olarak saklanır
     parameters = db.Column(db.JSON, nullable=True)
     result = db.Column(db.JSON, nullable=True)
@@ -48,8 +46,6 @@ class Task(db.Model):
             'result': self.result
         }
 
-
-# Crawl Sonuçları modeli
 class CrawlResult(db.Model):
     __tablename__ = 'crawl_results'
     
@@ -58,6 +54,8 @@ class CrawlResult(db.Model):
     url = db.Column(db.String(2048), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
     content_length = db.Column(db.Integer, nullable=True)
+    user_id = db.Column(db.String(64),nullable=True)
+
 
     # Görevle ilişki
     task = db.relationship('Task', backref=db.backref('crawl_results', lazy=True))
@@ -65,7 +63,6 @@ class CrawlResult(db.Model):
     def __repr__(self):
         return f"<CrawlResult {self.id}: {self.found_url}>"
     
-
 class NmapResult(db.Model):
     __tablename__ = 'nmap_results'
     
@@ -74,6 +71,8 @@ class NmapResult(db.Model):
     target = db.Column(db.String(2048), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
     scan_result = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.String(64),nullable=True)
+
 
     # Görevle ilişki
     task = db.relationship('Task', backref=db.backref('nmap_results', lazy=True))
@@ -81,7 +80,6 @@ class NmapResult(db.Model):
     def __repr__(self):
         return f"<NmapResult {self.id}: {self.target}>"
     
-
 class WhoisResult(db.Model):
     __tablename__ = 'whois_results'
     
@@ -90,6 +88,7 @@ class WhoisResult(db.Model):
     domain = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
     whois_data = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.String(64),nullable=True)
 
     # Görevle ilişki
     task = db.relationship('Task', backref=db.backref('whois_results', lazy=True))
