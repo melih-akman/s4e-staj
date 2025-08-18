@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   api:
     build:
       context: ./api
@@ -65,7 +66,7 @@ services:
     entrypoint: ["sleep", "infinity"]
     volumes:
       - ./katana:/data
-    # Katana genellikle worker tarafından subprocess ile çağrılır, burada sadece hazır bekletiliyor
+
   flower:
     image: mher/flower
     command: celery flower --broker=amqp://guest:guest@rabbitmq:5672//
@@ -102,6 +103,6 @@ services:
     entrypoint: ["sleep", "infinity"]
     volumes:
       - ./whois:/data
-   
+
 volumes:
   db_data:
