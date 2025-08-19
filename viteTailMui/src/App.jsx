@@ -7,6 +7,7 @@ import Login from './pages/login'
 import Signup from './pages/signUp'
 import ErrorPage from './pages/errorPage'
 import ToolPage from './pages/toolPage'
+import History from './pages/history'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/history" element={<History />} />
           <Route path="/tools/:toolId" element={<ToolPage />} />
           <Route path="*" element={<ErrorPage />} />
         </Routes>

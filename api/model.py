@@ -21,7 +21,7 @@ class Task(db.Model):
     id = db.Column(db.String(36), primary_key=True)  # Celery task ID'si
     task_type = db.Column(db.String(50), nullable=False)  # Görev tipi (add_numbers, run_command)
     status = db.Column(db.String(20), nullable=False)  # SUCCESS, PENDING, FAILURE
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now() + timedelta(hours=3))
     completed_at = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.String(64),nullable=True)
    

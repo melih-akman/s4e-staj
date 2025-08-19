@@ -56,7 +56,13 @@ def run_command(self, command, user_id):
             existing_task = Task.query.filter_by(id=self.request.id).first()
             if existing_task:
                 existing_task.status = 'SUCCESS'
-                existing_task.result = result.stdout.replace('\n', ' ').strip() if result.stdout else None
+                existing_task.result = {
+                    "status": "success",
+                    "command": command if isinstance(command, str) else " ".join(command),
+                    "stdout": result.stdout.replace('\n', ' ').strip() if result.stdout else None,
+                    "stderr": result.stderr.replace('\n', ' ').strip() if result.stderr else None,
+                    "return_code": result.returncode
+                }
                 existing_task.completed_at = datetime.now() + timedelta(hours=3)
                 existing_task.user_id = user_id
                 db.session.commit()

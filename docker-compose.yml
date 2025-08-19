@@ -1,7 +1,22 @@
 version: '3.8'
 
 services:
-
+  frontend:
+    build:
+      context: ./viteTailMui
+      dockerfile: Dockerfile
+    container_name: viteTailMui
+    working_dir: /app
+    volumes:
+      - ./viteTailMui:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: npm run dev 
+    depends_on:
+      - api
   api:
     build:
       context: ./api
@@ -106,3 +121,4 @@ services:
 
 volumes:
   db_data:
+
