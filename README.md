@@ -4,7 +4,11 @@
 
 CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmiş web tabanlı bir platformdur. Bu platform, popüler siber güvenlik araçlarını (Nmap, Katana, Whois, Nikto) tek bir arayüzden kullanmanıza olanak tanır. React frontend ve Flask backend ile geliştirilmiş, Docker container'ları ile çalışan modern bir mimari kullanmaktadır.
 
-## 🚀 Özellikler
+## �️ Arayüz Görünümü
+
+![CyberLens UI](ui.png)
+
+## �🚀 Özellikler
 
 - **Web Crawling**: Katana ile web sitesi tarama
 - **Port Scanning**: Nmap ile ağ keşfi ve port taraması
@@ -280,7 +284,7 @@ Bu proje eğitim amaçlı geliştirilmiştir.
 
 - **Geliştirici**: Melih Akman
 - **Repository**: https://github.com/melih-akman/s4e-staj
-- **Branch**: frontend
+- **Branch**: frontend  
 
 ---
 
