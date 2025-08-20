@@ -15,7 +15,8 @@ import AdbIcon from '@mui/icons-material/Adb';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const pages = [];
+
+const pages = ['Home','History'];
 
 function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
@@ -49,9 +50,8 @@ function ResponsiveAppBar() {
 
   const handleNavigation = (page) => {
     const routes = {
-      'Products': '/products',
-      'Pricing': '/pricing',
-      'Blog': '/blog'
+      'Home': '/',
+      'History': '/history'
     };
     navigate(routes[page] || '/');
     handleCloseNavMenu();
@@ -79,7 +79,13 @@ function ResponsiveAppBar() {
     <AppBar position="static" sx={{ background: 'linear-gradient(to right, #38014f, #130059)', borderBottom: '1px solid rgba(255, 255, 255, 0.45)' }}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          <AdbIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center'}}>
+            <img
+              src="/public/CyberLensWh2.png"
+              alt="CyberLens Logo"
+              style={{ height: 60, width: 60, marginRight: 16, borderRadius: '90%' }}
+            />
+          </Box>
           <Typography
             variant="h6"
             noWrap
@@ -95,7 +101,7 @@ function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            LOGO
+            CyberLens
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -133,7 +139,13 @@ function ResponsiveAppBar() {
             </Menu>
           </Box>
 
-          <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center'}}>
+            <img
+              src="/public/CyberLensWh2.png"
+              alt="CyberLens Logo"
+              style={{ height: 60, width: 60, marginRight: 16, borderRadius: '90%' }}
+            />
+          </Box>
           <Typography
             variant="h5"
             noWrap
@@ -150,7 +162,7 @@ function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            LOGO
+            CyberLens
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
@@ -186,8 +198,8 @@ function ResponsiveAppBar() {
             ) : (
               <Button
                 onClick={() => navigate('/login')}
-                sx={{ color: 'white', border: '1px solid white' }}
-                variant="outlined"
+                sx={{ color: 'white', ":hover": { bgcolor: 'rgba(255, 255, 255, 0.1)' }}}
+                variant="text"
               >
                 Login
               </Button>

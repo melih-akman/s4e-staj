@@ -5,6 +5,11 @@ import { Box } from '@mui/material'
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SecurityIcon from '@mui/icons-material/Security';
+import LanguageIcon from '@mui/icons-material/Language';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import WebIcon from '@mui/icons-material/Web';
+
 
 const colorPalette = {
   purple: '#38014f',
@@ -15,10 +20,10 @@ const colorPaletteButton = {
   '#130059': '#2196f3',
 }
 const counterData = [
-  { id: 1, name: "Bekleyen İşlemler", value: 10, color: colorPalette.blue },
-  { id: 2, name: "Tamamlanan İşlemler", value: 5, color: colorPalette.purple },
-  { id: 3, name: "Başarısız İşlemler", value: 8, color: colorPalette.blue },
-  { id: 4, name: "Diğer İşlemler", value: 12, color: colorPalette.purple },
+  { id: 1, name: "Pending Operations", value: 10, color: colorPalette.blue },
+  { id: 2, name: "Completed Operations", value: 5, color: colorPalette.purple },
+  { id: 3, name: "Failed Operations", value: 8, color: colorPalette.blue },
+  { id: 4, name: "Other Operations", value: 12, color: colorPalette.purple },
 ];
 const totalActions = counterData.reduce((acc, counter) => acc + counter.value, 0);
 
@@ -43,10 +48,10 @@ async function getDataGetReq() {
 }
 
 const toolsData = [
-  { id: 'katana', name: "Katana Crawler", description: "Web crawling tool to discover URLs and endpoints with advanced algorithms.", color: colorPalette.blue },
-  { id: 'nmap', name: "Nmap Scanner", description: "Network mapping and port scanning tool for security assessment.", color: colorPalette.purple },
-  { id: 'whois', name: "Whois Lookup", description: "Domain and IP address information lookup service.", color: colorPalette.blue },
-  { id: 'command', name: "Command Runner", description: "Execute custom shell commands and scripts remotely.", color: colorPalette.purple },
+  { id: 'katana', name: "Katana Crawler", description: "Web crawling tool to discover URLs and endpoints with advanced algorithms.", color: colorPalette.blue, icon: <WebIcon /> },
+  { id: 'nmap', name: "Nmap Scanner", description: "Network mapping and port scanning tool for security assessment.", color: colorPalette.purple, icon: <SecurityIcon /> },
+  { id: 'whois', name: "Whois Lookup", description: "Domain and IP address information lookup service.", color: colorPalette.blue, icon: <LanguageIcon /> },
+  { id: 'command', name: "Command Runner", description: "Execute custom shell commands and scripts remotely.", color: colorPalette.purple, icon: <TerminalIcon /> },
 ];
 
 function ToolsCard({ tool, icon, onNavigate }) {
@@ -147,22 +152,23 @@ function App() {
   }, []); // Sadece ilk yüklemede çalış
 
   const handleNavigateToTool = (tool) => {
-    navigate(`/tools/${tool.id}`, { state: { tool } });
+    // State kullanmadan sadece navigate edin
+    navigate(`/tools/${tool.id}`);
   };
 
   return (
     <>
       <div className='flex flex-col items-center min-h-screen w-screen p-4 bg-gradient-to-r from-[#38014f]  to-[#130059] overflow-x-hidden'>
-       
+
         <div className='max-w-9xl h-screen w-full p-8  rounded-lg flex flex-col items-center justify-center text-center mb-8'>
-          <h1 className='text-6xl font-bold mb-8'>Web Güvenliği için Crawler, Nmap, Whois ve Diğer Araçlar</h1>
+          <h1 className='text-6xl font-bold mb-8'>Crawler, Nmap, Whois and Other Tools for Web Security</h1>
           {loading ? (
             <div className="text-white">Loading...</div>
           ) : (
             <>
               <div className='text-center text-gray-300 mb-8'>
                 <h2 className='text-2xl font-bold'>
-                  Toplam İşlem Sayısı: {counterData.reduce((acc, counter) => acc + counter.value, 0)}
+                  Total Operations: {counterData.reduce((acc, counter) => acc + counter.value, 0)}
                 </h2>
               </div>
             </>
@@ -187,27 +193,27 @@ function App() {
             onClick={() => {
               const toolsSection = document.getElementById('tools-section');
               if (toolsSection) {
-                toolsSection.scrollIntoView({ behavior: 'smooth', block: 'start'});
+                toolsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
             }}
           >
-            Araçlara Git
+            Go to Tools
           </Button>
           <div className="h-32"></div>
         </div>
-        <h2 className='text-4xl font-bold mb-8'>Sayaçlar</h2>
+        <h2 className='text-4xl font-bold mb-8'>Counters</h2>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8'>
           {counterData.map(counter => (
             <Counter key={counter.id} name={counter.name} value={counter.value} color={counter.color} />
           ))}
         </div>
-        <h2 className='text-4xl font-bold mb-8'>Araçlar</h2>
+        <h2 className='text-4xl font-bold mb-8'>Tools</h2>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8' id='tools-section'>
           {toolsData.map(tool => (
             <ToolsCard
               key={tool.id}
               tool={tool}
-              icon={<Computer className='my-4' style={{ fontSize: '3rem' }} />}
+              icon={React.cloneElement(tool.icon, { className: 'my-4', style: { fontSize: '3rem' } })}
               onNavigate={handleNavigateToTool}
             />
           ))}

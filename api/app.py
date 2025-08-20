@@ -228,6 +228,20 @@ def get_counter_data():
     ]
     return jsonify(counter_data)
 
+@app.route('/api/history/<user_id>', methods=['GET'])
+def get_history(user_id):
+    # Kullanıcının geçmiş görevlerini getir
+    tasks = db.session.query(Task).filter_by(user_id=user_id).order_by(Task.created_at.desc()).all()
+    if not tasks:
+        return jsonify({'message': 'No tasks found for this user'}), 401
+    return jsonify([{
+        'id': task.id,
+        'task_type': task.task_type,
+        'status': task.status,
+        'created_at': task.created_at,
+        'completed_at': task.completed_at,
+        'result': task.result
+    } for task in tasks])
 
 if __name__ == '__main__':
     app.run(debug=True)

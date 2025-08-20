@@ -4,6 +4,8 @@ import { Box, Button, TextField, Card, CardContent, Typography, Paper, LinearPro
 import { ArrowBack, PlayArrow, Stop, Download, Refresh, ExpandMore, Security, Language, Terminal } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../firebase/config';
+import History from './history'
+
 
 const colorPalette = {
   purple: '#38014f',
@@ -534,7 +536,7 @@ function CommandTool({ tool }) {
     const headers = await getAuthHeaders();
 
     try {
-      const response = await fetch('/api/tasks/command', {
+      const response = await fetch('/api/run-command', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({ command })
@@ -557,7 +559,7 @@ function CommandTool({ tool }) {
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/tasks/${id}/status`);
+        const response = await fetch(`/api/command-result/${id}`);
         const data = await response.json();
 
         if (data.status === 'SUCCESS') {
@@ -661,10 +663,6 @@ function CommandTool({ tool }) {
                 </AccordionDetails>
               </Accordion>
             )}
-
-            <Typography variant="body2" sx={{ color: 'white', mt: 2 }}>
-              Return Code: <Chip label={results.return_code} color={results.return_code === 0 ? 'success' : 'error'} size="small" />
-            </Typography>
           </CardContent>
         </Card>
       )}
