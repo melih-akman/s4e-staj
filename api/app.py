@@ -21,6 +21,32 @@ app.config['CELERY_RESULT_BACKEND'] = 'rpc://'  # RabbitMQ ile önerilen backend
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'], backend=app.config['CELERY_RESULT_BACKEND'])
 celery.conf.update(app.config)
 
+def is_valid_url(url):
+    # Basit bir URL doğrulama
+    return url.startswith('http://') or url.startswith('https://') and url.count('.') >= 1
+
+def is_valid_url_nmap(url):
+    return url.count('.') >= 1
+
+def is_valid_url_or_ip(value):
+    return is_valid_url_nmap(value) or is_valid_ip(value)
+
+def is_valid_ip(ip):
+    # Basit bir IP adresi doğrulama
+    parts = ip.split('.')
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit() or not 0 <= int(part) <= 255:
+            return False
+    return True
+
+def is_valid_command(command):
+    disallowed_commands = ['sudo', 'rm', 'del', 'copy', 'move']
+    for cmd in disallowed_commands:
+        if cmd in command:
+            return False
+    return True
 
 @app.route('/api/run-command', methods=['POST'])
 def run_system_command():
@@ -33,13 +59,16 @@ def run_system_command():
     else:
         user_id = request.headers.get('Session-ID')   
     if not command:
-        return jsonify({'error': 'Komut gerekli'}), 400
+        return jsonify({'error': 'Komut gerekli'}), 422
     
     # Güvenlik kontrolü (opsiyonel ama önerilir)
     # Gerçek bir uygulamada daha kapsamlı güvenlik önlemleri alınmalıdır
     if ';' in command or '&&' in command or '|' in command:
-        return jsonify({'error': 'Geçersiz komut'}), 400
-        
+        return jsonify({'error': 'Geçersiz komut'}), 412
+
+    if not is_valid_command(command):
+        return jsonify({'error': 'Geçersiz komut'}), 412
+
     # Celery görevini başlat
     task = celery.send_task('celery_app.run_command', args=[command,user_id])
 
@@ -67,8 +96,9 @@ def run_katana():
     else:
         user_id = request.headers.get('Session-ID')
     if not url:
-        return jsonify({'error': 'URL gerekli'}), 400
-    
+        return jsonify({'error': 'URL gerekli'}), 422
+    if not is_valid_url(url):
+        return jsonify({'error': 'Geçersiz URL'}), 412
     # Celery görevini başlat
     task = celery.send_task('celery_app.run_katana', args=[url, user_id])
 
@@ -94,8 +124,10 @@ def run_nmap_scan():
     else:
         user_id = request.headers.get('Session-ID')
     if not target:
-        return jsonify({'error': 'Hedef gerekli'}), 400
-    
+        return jsonify({'error': 'Hedef gerekli'}), 422
+    if not is_valid_url_or_ip(target):
+        return jsonify({'error': 'Geçersiz URL veya IP adresi'}), 412
+
     # Celery görevini başlat
     task = celery.send_task('celery_app.run_nmap', args=[target, user_id])
 
@@ -124,6 +156,8 @@ def whois_lookup():
 
     if not ip_address_or_domain:
         return jsonify({'error': 'IP adresi veya domain gerekli'}), 400
+    if not is_valid_url_nmap(ip_address_or_domain) and not is_valid_ip(ip_address_or_domain):
+        return jsonify({'error': 'Geçersiz IP adresi veya domain'}), 412
 
     task = celery.send_task('celery_app.whois_lookup', args=[ip_address_or_domain, user_id])
 

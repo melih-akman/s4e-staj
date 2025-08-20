@@ -79,6 +79,15 @@ function KatanaTool({ tool }) {
         body: JSON.stringify({ url })
       });
 
+      // 412 hata durumu kontrolü
+      if (response.status === 412) {
+        setIsRunning(false);
+        alert('Incorrect URL format! Please enter a valid URL (ex: https://example.com)');
+        setUrl(''); // Clear the URL
+        setLogs(prev => [...prev, `❌ Invalid URL format: ${url}`]);
+        return;
+      }
+
       const data = await response.json();
       setTaskId(data.task_id);
       setLogs(prev => [...prev, `Started Katana crawling for: ${url}`]);
@@ -168,7 +177,7 @@ function KatanaTool({ tool }) {
               }}
             />
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <Button
                 variant="contained"
                 startIcon={<PlayArrow />}
@@ -267,6 +276,14 @@ function NmapTool({ tool }) {
         body: JSON.stringify({ target })
       });
 
+      if (response.status === 412) {
+        setIsRunning(false);
+        alert('Incorrect target format! Please enter a valid target (ex: 1.1.1.1 or example.com)');
+        setTarget(''); // Clear the target
+        setLogs(prev => [...prev, `❌ Invalid target format: ${target}`]);
+        return;
+      }
+
       const data = await response.json();
       setLogs(prev => [...prev, `Started Nmap scan for: ${target}`]);
 
@@ -323,11 +340,11 @@ function NmapTool({ tool }) {
           <div className="space-y-4">
             <TextField
               fullWidth
-              label="Target (IP or Domain)"
+              label="Target"
               variant="outlined"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              placeholder="192.168.1.1 or example.com"
+              placeholder="1.1.1.1 or example.com"
               disabled={isRunning}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -344,7 +361,7 @@ function NmapTool({ tool }) {
               startIcon={<PlayArrow />}
               onClick={handleStartScan}
               disabled={isRunning || !target}
-              sx={{ backgroundColor: colorPaletteButton[tool.color] }}
+              sx={{ backgroundColor: colorPaletteButton[tool.color], mt: 3 }}
             >
               {isRunning ? 'Scanning...' : 'Start Scan'}
             </Button>
@@ -405,6 +422,14 @@ function WhoisTool({ tool }) {
         body: JSON.stringify({ ip_address_or_domain: domain })
       });
 
+      if (response.status === 412) {
+        setIsRunning(false);
+        alert('Incorrect target format! Please enter a valid target (ex: 1.1.1.1 or example.com)');
+        setDomain(''); // Clear the target
+        setLogs(prev => [...prev, `❌ Invalid target format: ${domain}`]);
+        return;
+      }
+
       const data = await response.json();
       setLogs(prev => [...prev, `Started Whois lookup for: ${domain}`]);
 
@@ -460,11 +485,11 @@ function WhoisTool({ tool }) {
           <div className="space-y-4">
             <TextField
               fullWidth
-              label="Domain or IP Address"
+              label="Target"
               variant="outlined"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
-              placeholder="example.com or 8.8.8.8"
+              placeholder="example.com or 1.1.1.1"
               disabled={isRunning}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -481,7 +506,7 @@ function WhoisTool({ tool }) {
               startIcon={<PlayArrow />}
               onClick={handleLookup}
               disabled={isRunning || !domain}
-              sx={{ backgroundColor: colorPaletteButton[tool.color] }}
+              sx={{ backgroundColor: colorPaletteButton[tool.color] ,mt: 3 }}
             >
               {isRunning ? 'Looking up...' : 'Lookup'}
             </Button>
@@ -541,6 +566,13 @@ function CommandTool({ tool }) {
         headers: headers,
         body: JSON.stringify({ command })
       });
+      if (response.status === 412) {
+        setIsRunning(false);
+        alert('Invalid or unsafe command format! Please enter a valid command.');
+        setCommand(''); // Clear the command
+        setLogs(prev => [...prev, `❌ Invalid or unsafe command format: ${command}`]);
+        return;
+      }
 
       const data = await response.json();
       setLogs(prev => [...prev, `Started command execution: ${command}`]);
@@ -621,7 +653,7 @@ function CommandTool({ tool }) {
               startIcon={<PlayArrow />}
               onClick={handleRunCommand}
               disabled={isRunning || !command}
-              sx={{ backgroundColor: colorPaletteButton[tool.color] }}
+              sx={{ backgroundColor: colorPaletteButton[tool.color], mt: 3 }}
             >
               {isRunning ? 'Executing...' : 'Execute Command'}
             </Button>
