@@ -7,8 +7,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user for security and add to docker group
+RUN groupadd -r appuser && useradd -r -g appuser appuser \
+    && groupadd -f docker \
+    && usermod -aG docker appuser
 
 # Set work directory
 WORKDIR /app
@@ -38,7 +40,26 @@ COPY . .
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
-USER appuser
+
+# Add an entrypoint script to handle docker group permissions
+RUN echo '#!/bin/bash\n\
+# Get the docker socket group ID from the host\n\
+DOCKER_SOCK_GID=$(stat -c "%g" /var/run/docker.sock 2>/dev/null || echo "999")\n\
+\n\
+# Update the docker group GID to match the host\n\
+groupmod -g $DOCKER_SOCK_GID docker 2>/dev/null || true\n\
+\n\
+# Add appuser to docker group with the correct GID\n\
+usermod -aG $DOCKER_SOCK_GID appuser 2>/dev/null || true\n\
+\n\
+# Execute the original command as appuser\n\
+exec gosu appuser "$@"\n' > /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+
+# Install gosu for better user switching
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Run celery worker
 CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=2"]
