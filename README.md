@@ -4,11 +4,11 @@
 
 CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmiş web tabanlı bir platformdur. Bu platform, popüler siber güvenlik araçlarını (Nmap, Katana, Whois, Nikto) tek bir arayüzden kullanmanıza olanak tanır. React frontend ve Flask backend ile geliştirilmiş, Docker container'ları ile çalışan modern bir mimari kullanmaktadır.
 
-## �️ Arayüz Görünümü
+## 🖼️ Arayüz Görünümü
 
 ![CyberLens UI](ui.png)
 
-## �🚀 Özellikler
+## 🚀 Özellikler
 
 - **Web Crawling**: Katana ile web sitesi tarama
 - **Port Scanning**: Nmap ile ağ keşfi ve port taraması
@@ -22,7 +22,8 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 
 ### Frontend
 - **React 19** - Modern UI framework
-- **Vite** - Hızlı build tool
+- **Vite** - Hızlı build tool ve development server
+- **Nginx** - Production static file serving (Alpine Linux)
 - **Material-UI (MUI)** - Component library
 - **TailwindCSS** - Utility-first CSS framework
 - **React Router** - Client-side routing
@@ -30,6 +31,7 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 
 ### Backend
 - **Flask** - Python web framework
+- **Gunicorn** - Production WSGI server
 - **Celery** - Asenkron görev kuyruğu
 - **PostgreSQL** - Ana veritabanı
 - **RabbitMQ** - Message broker
@@ -38,6 +40,9 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 
 ### DevOps & Tools
 - **Docker & Docker Compose** - Container orchestration
+- **Multi-stage builds** - Optimized container images
+- **Health checks** - Container health monitoring
+- **Resource limits** - Memory ve CPU sınırları
 - **Nmap** - Network discovery ve security auditing
 - **Katana** - Web crawler (ProjectDiscovery)
 - **Whois** - Domain information lookup
@@ -49,194 +54,150 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 ### Gereksinimler
 - Docker
 - Docker Compose
-- Git
+- Make (opsiyonel, kolay kullanım için)
 
-### Adım Adım Kurulum
+### 🚀 Hızlı Başlangıç
 
-1. **Projeyi klonlayın:**
+#### Production Environment
 ```bash
-git clone https://github.com/melih-akman/s4e-staj.git
+# Repository'yi klonlayın
+git clone <repository-url>
+cd s4e-staj
+
+# Production environment'ı başlatın
+make prod
+# veya
+docker-compose up -d
+
+# Servisleri durdurma
+make down
+```
+
+#### Development Environment
+```bash
+# Development environment'ı başlatın
+make dev
+# veya
+docker-compose -f docker-compose.dev.yml up -d
+
+# Development loglarını takip etme
+make logs-dev
+```
+
+### 🔧 Manuel Kurulum
+
+1. **Repository'yi klonlayın:**
+```bash
+git clone <repository-url>
 cd s4e-staj
 ```
 
-2. **Firebase konfigürasyonu:**
-   
-   `viteTailMui` klasöründe `.env` dosyası oluşturun:
-```env
-VITE_API_KEY=your_firebase_api_key
-VITE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_PROJECT_ID=your_project_id
-VITE_STORAGE_BUCKET=your_project.appspot.com
-VITE_MESSAGING_SENDER_ID=your_sender_id
-VITE_APP_ID=your_app_id
+2. **Container'ları build edin:**
+```bash
+docker-compose build
 ```
 
-3. **Docker container'ları başlatın:**
+3. **Servisleri başlatın:**
 ```bash
 docker-compose up -d
 ```
 
-4. **Servislerin hazır olmasını bekleyin** (yaklaşık 2-3 dakika)
+## 🌐 Erişim URL'leri
 
-## 🔧 Servis Portları ve Erişim Bilgileri
+### Production
+- **Frontend (Nginx)**: http://localhost
+- **API (Gunicorn)**: http://localhost:5000
+- **Health Check**: http://localhost/api/health
+- **Flower (Celery Monitoring)**: http://localhost:5555
+- **PgAdmin (Database)**: http://localhost:8080
+- **RabbitMQ Management**: http://localhost:15673
 
-### Ana Servisler
-| Servis | Port | URL | Açıklama |
-|--------|------|-----|-----------|
-| **Frontend (React)** | 5173 | http://localhost:5173 | Ana web arayüzü |
-| **Backend API (Flask)** | 5000 | http://localhost:5000 | REST API |
+### Development
+- **Frontend (Vite Dev Server)**: http://localhost:5173
+- **API (Flask Dev Server)**: http://localhost:5000
+- **Diğer servisler**: Production ile aynı portlar
 
-### Veritabanı ve Monitoring
-| Servis | Port | URL | Kullanıcı Adı | Şifre |
-|--------|------|-----|---------------|-------|
-| **PostgreSQL** | 5433 | localhost:5433 | postgres | postgres |
-| **pgAdmin** | 8080 | http://localhost:8080 | admin@admin.com | admin |
-| **RabbitMQ Management** | 15673 | http://localhost:15673 | guest | guest |
-| **Flower (Celery Monitor)** | 5555 | http://localhost:5555 | - | - |
+## 🐳 Docker Mimarisi
 
-### Container Bilgileri
-| Container | İmaj | Açıklama |
-|-----------|------|----------|
-| viteTailMui | Custom React | Frontend uygulaması |
-| flask_api | Custom Flask | Backend API |
-| celery_worker | Custom Celery | Görev işleyici |
-| postgres_db | postgres:15 | Ana veritabanı |
-| rabbitmq | rabbitmq:3-management | Message broker |
-| katana_crawler | projectdiscovery/katana | Web crawler |
-| nmap_scanner | instrumentisto/nmap | Port scanner |
-| whois_lookup | tooldockers/whois | Domain bilgi sorgulama |
-| pgadmin | dpage/pgadmin4 | DB yönetim arayüzü |
-
-## 🔐 Güvenlik ve Authentication
-
-### Firebase Authentication
-- Email/Password ile giriş
-- Google OAuth ile giriş
-- Misafir kullanıcı desteği (session tabanlı)
-
-### Veritabanı Güvenliği
-- PostgreSQL kullanıcı: `postgres`
-- PostgreSQL şifre: `postgres`
-- Database: `postgres`
-
-
-## 📚 API Endpoints
-
-### Ana Endpoints
-
-#### 🔧 Araç Çalıştırma Endpoints
+### Production Setup
 ```
-POST /api/run-command           # Genel sistem komutu çalıştırma
-POST /api/run-katana           # Katana web crawler başlatma
-POST /api/nmap-scan            # Nmap port scanner başlatma  
-POST /api/whois-lookup         # Whois domain/IP sorgulama
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│   Nginx     │    │  Gunicorn    │    │   Celery    │
+│  (Frontend) │────│   (API)      │────│  (Worker)   │
+│   Alpine    │    │ Python-slim  │    │ Python-slim │
+└─────────────┘    └──────────────┘    └─────────────┘
+       │                    │                   │
+       └────────────────────┼───────────────────┘
+                           │
+              ┌─────────────┴──────────────┐
+              │                            │
+        ┌─────────────┐            ┌──────────────┐
+        │ PostgreSQL  │            │  RabbitMQ    │
+        │     DB      │            │   Broker     │
+        └─────────────┘            └──────────────┘
 ```
 
-#### 📊 Sonuç Alma Endpoints
-```
-GET /api/command-result/<task_id>   # Genel komut sonucu
-GET /api/katana-result/<task_id>    # Katana tarama sonucu
-GET /api/nmap-result/<task_id>      # Nmap tarama sonucu
-GET /api/whois-result/<task_id>     # Whois sorgu sonucu
-```
+### Özellikler
+- **Multi-stage builds**: Küçük production image'ları
+- **Non-root users**: Güvenlik için root olmayan kullanıcılar
+- **Health checks**: Container sağlık kontrolü
+- **Resource limits**: Bellek ve CPU sınırları
+- **Restart policies**: Otomatik yeniden başlatma
+- **Static file optimization**: Nginx ile gzip ve caching
 
-#### 📈 Dashboard ve Geçmiş
-```
-GET /api/counterData               # Ana sayfa istatistikleri
-GET /api/history/<user_id>         # Kullanıcı işlem geçmişi
-```
+## 🔄 Geliştirme vs Production
 
-## 🗄️ Veritabanı Şeması
+| Özellik | Development | Production |
+|---------|-------------|------------|
+| Frontend Server | Vite Dev Server | Nginx Alpine |
+| API Server | Flask Dev Server | Gunicorn |
+| Hot Reload | ✅ Evet | ❌ Hayır |
+| Volume Mounting | ✅ Evet | ❌ Hayır |
+| Build Optimization | ❌ Hayır | ✅ Evet |
+| Health Checks | ❌ Hayır | ✅ Evet |
+| Resource Limits | ❌ Hayır | ✅ Evet |
 
-### Tablolar
-1. **tasks** - Tüm görevlerin genel bilgileri
-2. **crawl_results** - Katana tarama sonuçları
-3. **nmap_results** - Nmap tarama sonuçları
-4. **whois_results** - Whois sorgu sonuçları
+## 📊 Monitoring
 
-### Örnek Task Yapısı
-```json
-{
-  "id": "uuid-task-id",
-  "task_type": "run_katana",
-  "status": "SUCCESS",
-  "user_id": "firebase-user-id",
-  "parameters": {"url": "example.com"},
-  "result": {"urls": [...], "subdomains": [...]}
-}
-```
-
-## 🚀 Kullanım
-
-### 1. Platforma Erişim
-- Tarayıcınızda `http://localhost:5173` adresine gidin
-- Firebase ile kayıt olun veya giriş yapın
-- Misafir olarak da kullanabilirsiniz
-
-### 2. Araç Kullanımı
-
-#### Katana Web Crawler
-```
-Tool: Katana
-Input: https://example.com
-Output: Bulunan URL'ler, subdomain'ler
-```
-
-#### Nmap Port Scanner
-```
-Tool: Nmap
-Input: 192.168.1.1 veya example.com
-Output: Açık portlar, servisler
-```
-
-#### Whois Domain Lookup
-```
-Tool: Whois
-Input: example.com
-Output: Domain kayıt bilgileri
-```
-
-### 3. Sonuçları Görüntüleme
-- Real-time sonuçlar araç sayfasında
-- Geçmiş sonuçlar History sayfasında
-- JSON formatında indirme seçeneği
-
-## 🔧 Geliştirme
-
-### Local Development
+### Health Checks
 ```bash
-# Frontend development
-cd viteTailMui
-npm install
-npm run dev
+# API health check
+curl http://localhost/api/health
 
-# Backend development
-cd api
-pip install -r requirements.txt
-python app.py
+# Container health status
+docker-compose ps
+
+# Detailed container inspection
+docker inspect viteTailMui | grep Health -A 10
 ```
 
-### Debug Modları
-- Flask DEBUG=True (development)
-- React HMR aktif
-- Celery verbose logging
+### Logs
+```bash
+# Tüm servislerin logları
+docker-compose logs -f
 
-## 📊 Monitoring ve Logs
+# Belirli bir servisin logları
+docker-compose logs -f frontend
+docker-compose logs -f api
+docker-compose logs -f worker
 
-### Celery Monitoring
-- Flower UI: `http://localhost:5555`
-- Worker durumu, görev kuyruğu, başarı/hata oranları
+# Celery monitoring
+# Flower: http://localhost:5555
+```
 
-### Database Monitoring
-- pgAdmin: `http://localhost:8080`
-- Veritabanı performansı, query analizi
+## 🛡️ Güvenlik
 
-### RabbitMQ Monitoring
-- Management UI: `http://localhost:15673`
-- Message queue durumu, connection'lar
+- **Non-root containers**: Tüm servisler non-root kullanıcı ile çalışır
+- **Security headers**: Nginx'de güvenlik başlıkları
+- **Resource limits**: DoS ataklarına karşı koruma
+- **Firebase Auth**: Güvenli kullanıcı doğrulama
+- **CORS yapılandırması**: Kontrollü cross-origin erişim
 
+## 🔧 Makefile Komutları
 
-## 🐛 Troubleshooting
+```bash
+make help        # Kullanılabilir komutları göster
+## 💡 Troubleshooting
 
 ### Yaygın Sorunlar
 
@@ -244,6 +205,7 @@ python app.py
 2. **Firebase config hatası**: `.env` dosyasının doğru yapılandırıldığından emin olun
 3. **Container başlatma hatası**: `docker-compose down -v && docker-compose up -d`
 4. **Database connection error**: PostgreSQL container'ının çalıştığını kontrol edin
+5. **Build hatası**: `make clean` ile temizleyip tekrar build edin
 
 ### Log Kontrolü
 ```bash
@@ -254,19 +216,50 @@ docker-compose logs -f
 docker-compose logs -f api
 docker-compose logs -f worker
 docker-compose logs -f frontend
+
+# Health check status
+docker-compose ps
+```
+
+## 🏗️ Geliştirme
+
+### Local Development
+```bash
+# Development environment (hot reload aktif)
+make dev
+
+# Frontend development
+cd viteTailMui
+npm install
+npm run dev
+
+# Backend development  
+cd api
+pip install -r requirements.txt
+python app.py
+```
+
+### Production Build Test
+```bash
+# Production build test
+make prod
+
+# Manuel build
+docker-compose build
+docker-compose up -d
 ```
 
 ## 🔮 Gelecek Planları
 
 - [ ] Nikto vulnerability scanner entegrasyonu
-- [ ] Daha fazla Nmap script desteği
+- [ ] Kubernetes deployment manifests
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Advanced monitoring (Prometheus/Grafana)
 - [ ] Rapor oluşturma sistemi (PDF export)
 - [ ] API rate limiting
-- [ ] Multi-tenant support
 - [ ] Advanced filtering ve search
 - [ ] Webhook notifications
 - [ ] Scheduled scans
-- [ ] Custom tool integration
 
 ## 👥 Katkıda Bulunma
 
@@ -284,7 +277,7 @@ Bu proje eğitim amaçlı geliştirilmiştir.
 
 - **Geliştirici**: Melih Akman
 - **Repository**: https://github.com/melih-akman/s4e-staj
-- **Branch**: frontend  
+- **Branch**: develop
 
 ---
 

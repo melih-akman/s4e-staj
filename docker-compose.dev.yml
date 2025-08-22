@@ -1,52 +1,52 @@
+version: '3.8'
+
 services:
   frontend:
     build:
       context: ./viteTailMui
-      dockerfile: Dockerfile
-    container_name: viteTailMui
+      dockerfile: Dockerfile.dev
+    container_name: viteTailMui_dev
+    working_dir: /app
+    volumes:
+      - ./viteTailMui:/app
+      - /app/node_modules
     ports:
-      - "80:80"
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: npm run dev 
     depends_on:
       - api
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.5'
-        reservations:
-          memory: 64M
-          cpus: '0.25'
+
   api:
     build:
       context: ./api
-    container_name: flask_api
+      dockerfile: Dockerfile.dev
+    container_name: flask_api_dev
+    working_dir: /app
+    volumes:
+      - ./api:/app
     ports:
       - "5000:5000"
     environment:
       - FLASK_APP=app.py
-      - FLASK_ENV=production
+      - FLASK_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
     depends_on:
       - db
       - rabbitmq
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '1.0'
-        reservations:
-          memory: 256M
-          cpus: '0.5'
 
   worker:
     build:
       context: ./worker
-    container_name: celery_worker
+      dockerfile: Dockerfile.dev
+    container_name: celery_worker_dev
+    working_dir: /app
     volumes:
+      - ./worker:/app
       - /var/run/docker.sock:/var/run/docker.sock
+    command: celery -A celery_app worker --loglevel=info
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
@@ -54,15 +54,6 @@ services:
       - db
       - rabbitmq
       - katana
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '2.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
 
   db:
     image: postgres:15
@@ -133,4 +124,3 @@ services:
 
 volumes:
   db_data:
-

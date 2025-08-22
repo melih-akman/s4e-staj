@@ -246,6 +246,26 @@ def get_whois_result(task_id):
         return jsonify({'result': task.result})
     return jsonify({'state': task.state})
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for Docker health check"""
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'service': 'CyberLens API'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.datetime.now().isoformat(),
+            'service': 'CyberLens API'
+        }), 500
+
 @app.route('/api/counterData', methods=['GET'])
 def get_counter_data():
     # Örnek sayaç verisi

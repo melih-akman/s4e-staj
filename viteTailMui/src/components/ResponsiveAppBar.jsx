@@ -81,7 +81,7 @@ function ResponsiveAppBar() {
         <Toolbar disableGutters>
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center'}}>
             <img
-              src="/public/CyberLensWh2.png"
+              src="/CyberLensWh2.png"
               alt="CyberLens Logo"
               style={{ height: 60, width: 60, marginRight: 16, borderRadius: '90%' }}
             />
@@ -141,7 +141,7 @@ function ResponsiveAppBar() {
 
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center'}}>
             <img
-              src="/public/CyberLensWh2.png"
+              src="/CyberLensWh2.png"
               alt="CyberLens Logo"
               style={{ height: 60, width: 60, marginRight: 16, borderRadius: '90%' }}
             />
