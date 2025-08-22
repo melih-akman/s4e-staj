@@ -18,7 +18,7 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 - **Real-time Results**: Celery ile asenkron görev işleme
 - **Responsive Design**: Material-UI ile modern arayüz
 
-## � Geçmiş (History) Özelliği
+## 🕓 Geçmiş (History) Özelliği
 
 CyberLens platformu, gerçekleştirilen tüm tarama işlemlerini otomatik olarak kaydeder ve kullanıcıların daha sonra erişebilmesi için iki farklı yöntem sunar:
 
@@ -50,7 +50,7 @@ CyberLens platformu, gerçekleştirilen tüm tarama işlemlerini otomatik olarak
 - **Session Güvenliği**: Misafir veriler otomatik olarak temizlenir
 - **Erişim Kontrolü**: Kullanıcılar sadece kendi geçmişlerini görebilir
 
-## �🛠️ Kullanılan Teknolojiler
+## 🛠️ Kullanılan Teknolojiler
 
 ### Frontend
 - **React 19** - Modern UI framework
