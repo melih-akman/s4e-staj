@@ -18,6 +18,38 @@ CyberLens, siber güvenlik uzmanları ve araştırmacıları için geliştirilmi
 - **Real-time Results**: Celery ile asenkron görev işleme
 - **Responsive Design**: Material-UI ile modern arayüz
 
+## 🕓 Geçmiş (History) Özelliği
+
+CyberLens platformu, gerçekleştirilen tüm tarama işlemlerini otomatik olarak kaydeder ve kullanıcıların daha sonra erişebilmesi için iki farklı yöntem sunar:
+
+### 🔐 Kayıtlı Kullanıcılar (Firebase Authentication)
+
+**Login olan kullanıcılar için:**
+- ✅ **Kalıcı Kayıt**: Tüm tarama sonuçları Firebase kullanıcı hesabıyla ilişkilendirilir
+- ✅ **Cross-Device Erişim**: Farklı cihazlardan login olarak geçmişe erişebilme
+- ✅ **Uzun Dönem Saklama**: Sonuçlar hesap silinene kadar saklanır
+
+### 🍪 Misafir Kullanıcılar (Session-Based)
+
+**Login olmayan kullanıcılar için:**
+- ⚠️ **Geçici Kayıt**: Sonuçlar sadece browser session'ında tutulur
+- ⚠️ **Tek Oturum**: Pencere kapatıldığında veya sayfa yenilendiğinde kaybolur
+- ⚠️ **Local Storage**: Sadece o tarayıcıda ve o sekmede erişilebilir
+- ⚠️ **Sınırlı Özellikler**: Temel görüntüleme ve kısa süreli erişim
+
+
+### 💡 Kullanım Önerileri
+
+1. **Önemli Taramalar İçin**: Mutlaka login olun ki sonuçlarınızı kaybetmeyin
+2. **Hızlı Testler İçin**: Misafir olarak kullanabilirsiniz ama sonuçları not alın
+3. **Takım Çalışması İçin**: Her üyenin kendi hesabı olsun ki işlemler karışmasın
+4. **Raporlama İçin**: Login kullanıcıları export özelliklerinden faydalanabilir
+
+### 🔒 Güvenlik ve Gizlilik
+
+- **Session Güvenliği**: Misafir veriler otomatik olarak temizlenir
+- **Erişim Kontrolü**: Kullanıcılar sadece kendi geçmişlerini görebilir
+
 ## 🛠️ Kullanılan Teknolojiler
 
 ### Frontend
@@ -128,7 +160,7 @@ docker-compose up -d
 └─────────────┘    └──────────────┘    └─────────────┘
        │                    │                   │
        └────────────────────┼───────────────────┘
-                           │
+                            │
               ┌─────────────┴──────────────┐
               │                            │
         ┌─────────────┐            ┌──────────────┐
@@ -204,7 +236,7 @@ make help        # Kullanılabilir komutları göster
 1. **Port çakışması**: Portların kullanımda olup olmadığını kontrol edin
 2. **Firebase config hatası**: `.env` dosyasının doğru yapılandırıldığından emin olun
 3. **Container başlatma hatası**: `docker-compose down -v && docker-compose up -d`
-4. **Database connection error**: PostgreSQL container'ının çalıştığını kontrol edin
+4. **Database connection error**: PostgreSQL containerının çalıştığını kontrol edin
 5. **Build hatası**: `make clean` ile temizleyip tekrar build edin
 
 ### Log Kontrolü
